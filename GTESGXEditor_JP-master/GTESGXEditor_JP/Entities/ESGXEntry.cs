@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using NAudio.Wave;
+using System.Windows;
 
 namespace GTESGXEditor_JP.Entities
 {
@@ -26,7 +27,7 @@ namespace GTESGXEditor_JP.Entities
             using (var stream = new BinaryStream(new MemoryStream(bytes)))
             {
                 if (stream.ReadString(4) != magic)
-                    throw new InvalidDataException("Not an ESGX file. Please open an ESGX file and try again.");
+                    throw new InvalidDataException("ESGXファイルではありません。 ESGXファイルを開いて再試行してください。");
 
                 stream.Position += 4;
 
@@ -108,7 +109,7 @@ namespace GTESGXEditor_JP.Entities
             using (var stream = new BinaryStream(new MemoryStream(bytes), ByteConverter.Little))
             {
                 if (stream.ReadString(4) != esMagic)
-                    throw new InvalidDataException("Not an ES file. Please open an ES file and try again.");
+                    throw new InvalidDataException("ESファイルではありません。 ESファイルを開いて再試行してください。");
 
                 stream.Position += 4;
 
@@ -142,17 +143,17 @@ namespace GTESGXEditor_JP.Entities
 
                 foreach (SampleSetting setting in sampleSettings)
                 {
-                    stream.Position = soundStartPointer + setting.SGXDOffset + 16; // 16 empty bytes at the start of each
+                    stream.Position = soundStartPointer + setting.SGXDOffset;
 
                     SGXDEntry entry = new SGXDEntry();
 
                     entry.waveChunk = new WaveChunk();
                     entry.nameChunk.fileName = string.Format("{0}_{1}", Path.GetFileNameWithoutExtension(path), j);
                     entry.waveChunk.soundSampleRate = (uint)setting.rpmFrequency * 10;
-
+                    
                     if (j == 0)
                     {
-                        entry.audioStream = stream.ReadBytes(sampleSettings[j + 1].SGXDOffset - 16);
+                        entry.audioStream = stream.ReadBytes(sampleSettings[j].SGXDOffset);
                     }
                     if (j == sampleSettings.Count - 1)
                     {
@@ -160,8 +161,9 @@ namespace GTESGXEditor_JP.Entities
                     }
                     else
                     {
-                        entry.audioStream = stream.ReadBytes(sampleSettings[j + 1].SGXDOffset - sampleSettings[j].SGXDOffset - 16);
+                        entry.audioStream = stream.ReadBytes(sampleSettings[j + 1].SGXDOffset - sampleSettings[j].SGXDOffset);
                     }
+                    
 
                     entry.fileSize = ushort.Parse(entry.audioStream.Length.ToString());
 
@@ -181,10 +183,6 @@ namespace GTESGXEditor_JP.Entities
             // Read loop start and end samples
             foreach (SGXDEntry entry in sgxdEntries)
             {
-                //File.WriteAllBytes(string.Format("{0}.tmp", Path.Combine(Path.GetDirectoryName(path), "tempAudio")), entry.audioStream);
-
-                //var test = new AudioFileReader(Path.Combine(Path.GetDirectoryName(path), "tempAudio")).Length;
-
                 byte[] currentLine;
                 int loopStart, loopEnd, numSamples;
                 using (var stream = new BinaryStream(new MemoryStream(entry.audioStream)))

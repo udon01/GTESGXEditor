@@ -142,7 +142,7 @@ namespace GTESGXEditor.Entities
 
                 foreach (SampleSetting setting in sampleSettings)
                 {
-                    stream.Position = soundStartPointer + setting.SGXDOffset + 16; // 16 empty bytes at the start of each
+                    stream.Position = soundStartPointer + setting.SGXDOffset;
 
                     SGXDEntry entry = new SGXDEntry();
 
@@ -152,7 +152,7 @@ namespace GTESGXEditor.Entities
 
                     if (j == 0)
                     {
-                        entry.audioStream = stream.ReadBytes(sampleSettings[j + 1].SGXDOffset - 16);
+                        entry.audioStream = stream.ReadBytes(sampleSettings[j].SGXDOffset);
                     }
                     if (j == sampleSettings.Count - 1)
                     {
@@ -160,7 +160,7 @@ namespace GTESGXEditor.Entities
                     }
                     else
                     {
-                        entry.audioStream = stream.ReadBytes(sampleSettings[j + 1].SGXDOffset - sampleSettings[j].SGXDOffset - 16);
+                        entry.audioStream = stream.ReadBytes(sampleSettings[j + 1].SGXDOffset - sampleSettings[j].SGXDOffset);
                     }
 
                     entry.fileSize = ushort.Parse(entry.audioStream.Length.ToString());

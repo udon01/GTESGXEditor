@@ -241,7 +241,7 @@ namespace GTESGXEditor_JP
                     i += 1;
                 }
 
-                System.Windows.Forms.MessageBox.Show(string.Format("エクスポートが完了しました {0}", saveFile.SelectedPath), "セーブ完了", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                System.Windows.Forms.MessageBox.Show(string.Format("「{0}」にエクスポートしました ", saveFile.SelectedPath), "セーブ完了", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 

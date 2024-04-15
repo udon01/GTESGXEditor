@@ -33,7 +33,8 @@ namespace GTESGXEditor_JP.Entities
             int vag_length = audioStream.Length - 16;
             byte[] vag_length_byte = new byte[4];
             vag_length_byte = Getbighex4(vag_length);
-            int rpmfrequency10 = rpmfrequency * 10;
+            //int rpmfrequency10 = rpmfrequency * 10;
+            int rpmfrequency10 = 44100;
             byte[] rpmfrequency10_byte = new byte[4];
             rpmfrequency10_byte = Getbighex4(rpmfrequency10);
             Array.Resize(ref WriteVAG_byte, WriteVAG_byte.Length + 4);
