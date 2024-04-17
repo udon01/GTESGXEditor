@@ -143,7 +143,7 @@ namespace GTESGXEditor_JP.Entities
 
                 foreach (SampleSetting setting in sampleSettings)
                 {
-                    stream.Position = soundStartPointer + setting.SGXDOffset;
+                    stream.Position = soundStartPointer + setting.SGXDOffset + 16;
 
                     SGXDEntry entry = new SGXDEntry();
 
@@ -161,7 +161,7 @@ namespace GTESGXEditor_JP.Entities
                     }
                     else
                     {
-                        entry.audioStream = stream.ReadBytes(sampleSettings[j + 1].SGXDOffset - sampleSettings[j].SGXDOffset);
+                        entry.audioStream = stream.ReadBytes(sampleSettings[j + 1].SGXDOffset - sampleSettings[j].SGXDOffset - 16);
                     }
                     
 
@@ -199,7 +199,7 @@ namespace GTESGXEditor_JP.Entities
                         // Read second byte of a line - 6 = loop start, 3 = loop end, determine sample count from where we are in seek
                         if (currentLine[1] == 6)
                         {
-                            entry.waveChunk.loopStartSample = (uint)(stream.Position - 16) / 16 * 28;
+                            entry.waveChunk.loopStartSample = (uint)(stream.Position - 16) / 16 * 28 - 28;
                         }
 
                         if (currentLine[1] == 3)
@@ -290,13 +290,13 @@ namespace GTESGXEditor_JP.Entities
 
                     stream.Position += 2;
 
-                    stream.WriteUInt32(sgxdEntry.waveChunk.soundSampleRate);
+                    stream.WriteUInt32(44100);
 
                     stream.Position += 8;
 
                     stream.WriteUInt16(4096);
                     stream.WriteUInt16(4096);
-                    stream.WriteUInt32(0);
+                    stream.WriteUInt32(sgxdEntry.waveChunk.loopStartSample);
                     stream.WriteUInt32(sgxdEntry.waveChunk.loopEndSample);
                     stream.WriteUInt32(sgxdEntry.waveChunk.loopStartSample);
                     stream.WriteUInt32(sgxdEntry.waveChunk.loopEndSample);

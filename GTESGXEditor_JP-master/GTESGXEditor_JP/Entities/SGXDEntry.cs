@@ -1,4 +1,5 @@
 ﻿using GTESGXEditor_JP.Properties;
+using Syroot.BinaryData;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -26,39 +27,56 @@ namespace GTESGXEditor_JP.Entities
 
         public void WriteVAG(string path, int rpmfrequency)
         {
-            byte[] WriteVAG_byte = new byte[0];
-            byte[] vag_ext = new byte[4] { 0x56, 0x41, 0x47, 0x70 };
-            byte[] vag_20 = new byte[4] { 0x00, 0x00, 0x00, 0x20 };
-            byte[] vag_zero4 = new byte[4] { 0x00, 0x00, 0x00, 0x00 };
-            int vag_length = audioStream.Length - 16;
-            byte[] vag_length_byte = new byte[4];
-            vag_length_byte = Getbighex4(vag_length);
-            //int rpmfrequency10 = rpmfrequency * 10;
-            int rpmfrequency10 = 44100;
-            byte[] rpmfrequency10_byte = new byte[4];
-            rpmfrequency10_byte = Getbighex4(rpmfrequency10);
-            Array.Resize(ref WriteVAG_byte, WriteVAG_byte.Length + 4);
-            Array.Copy(vag_ext, 0, WriteVAG_byte, WriteVAG_byte.Length - 4, 4);
-            Array.Resize(ref WriteVAG_byte, WriteVAG_byte.Length + 4);
-            Array.Copy(vag_20, 0, WriteVAG_byte, WriteVAG_byte.Length - 4, 4);
-            Array.Resize(ref WriteVAG_byte, WriteVAG_byte.Length + 4);
-            Array.Copy(vag_zero4, 0, WriteVAG_byte, WriteVAG_byte.Length - 4, 4);
-            Array.Resize(ref WriteVAG_byte, WriteVAG_byte.Length + 4);
-            Array.Copy(vag_length_byte, 0, WriteVAG_byte, WriteVAG_byte.Length - 4, 4);
-            Array.Resize(ref WriteVAG_byte, WriteVAG_byte.Length + 4);
-            Array.Copy(rpmfrequency10_byte, 0, WriteVAG_byte, WriteVAG_byte.Length - 4, 4);
-            for (int i = 0; i < 3; i++)
-            {
-                Array.Resize(ref WriteVAG_byte, WriteVAG_byte.Length + 4);
-                Array.Copy(vag_zero4, 0, WriteVAG_byte, WriteVAG_byte.Length - 4, 4);
-            }
-            Array.Resize(ref WriteVAG_byte, WriteVAG_byte.Length + audioStream.Length);
-            Array.Copy(audioStream, 0, WriteVAG_byte, WriteVAG_byte.Length - audioStream.Length, audioStream.Length);
+            byte[] zero16 = new byte[16] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+            byte[] audioStream16 = new byte[0];
 
-            FileStream fsw = new FileStream(string.Format("{0}.vag", Path.Combine(path, nameChunk.fileName)), 
-                                            FileMode.Create, FileAccess.Write);
-            fsw.Write(WriteVAG_byte, 0, WriteVAG_byte.Length);
-            fsw.Close();
+            Array.Resize(ref audioStream16, 16);
+            Array.Copy(audioStream, 0, audioStream16, 0, 16);
+            bool isEqual = true;
+            if (ReferenceEquals(zero16, audioStream16))
+            {
+                //同一のインスタンスの時は、同じとする
+                isEqual = true;
+            }
+            else if (zero16 == null || audioStream16 == null || zero16.Length != audioStream16.Length)
+            {
+                //どちらかがNULLか、要素数が異なる時は、同じではない
+                isEqual = false;
+            }
+            else
+            {
+                //1つ1つの要素が等しいかを調べる
+                for (int i = 0; i < zero16.Length; i++)
+                {
+                    //ary1の要素のEqualsメソッドで、ary2の要素と等しいか調べる
+                    if (!zero16[i].Equals(audioStream16[i]))
+                    {
+                        //1つでも等しくない要素があれば、同じではない
+                        isEqual = false;
+                        break;
+                    }
+                }
+            }
+
+            using (var file = new FileStream(string.Format("{0}.vag", Path.Combine(path, nameChunk.fileName)), FileMode.Create, FileAccess.Write))
+            using (var stream = new BinaryStream(file, ByteConverter.Big))
+            {
+                stream.Position = 0;
+                stream.WriteString("VAGp", StringCoding.Raw);
+                stream.WriteUInt32(32);
+                stream.Position += 4;
+                if (isEqual == true)
+                    stream.WriteUInt32((uint)(audioStream.Length - 16));
+                else if (isEqual == false)
+                    stream.WriteUInt32((uint)(audioStream.Length));
+                //stream.WriteUInt32((uint)(rpmfrequency * 10));
+                stream.WriteUInt32(44100);
+                stream.Position += 12;
+
+                if (isEqual == false)
+                    stream.Position += 16;
+                stream.WriteBytes(audioStream);
+            }
         }
 
         //intをbyte配列4バイト(ビッグエンディアン)に変換して戻す
