@@ -69,8 +69,8 @@ namespace GTESGXEditor_JP.Entities
                     stream.WriteUInt32((uint)(audioStream.Length - 16));
                 else if (isEqual == false)
                     stream.WriteUInt32((uint)(audioStream.Length));
-                //stream.WriteUInt32((uint)(rpmfrequency * 10));
-                stream.WriteUInt32(44100);
+                stream.WriteUInt32((uint)(rpmfrequency * 10));
+                //stream.WriteUInt32(44100);
                 stream.Position += 12;
 
                 if (isEqual == false)

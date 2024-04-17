@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:GTESGXEditor_JP"
         mc:Ignorable="d"
         ResizeMode="NoResize"
-        Title="Gran Turismo ESGX Editor_JP ver1.21" Height="450" Width="526" MinWidth="526" MinHeight="450">
+        Title="Gran Turismo ESGX Editor_JP ver1.22" Height="450" Width="526" MinWidth="526" MinHeight="450">
     <Grid Margin="0,0,432,0">
         <Menu HorizontalAlignment="Left" Height="21" VerticalAlignment="Top" Width="518" Margin="0,0,-432,0">
             <MenuItem Header="_ファイル">
