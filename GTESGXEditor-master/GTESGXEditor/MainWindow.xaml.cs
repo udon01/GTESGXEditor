@@ -22,6 +22,7 @@ namespace GTESGXEditor
         int activeSGXDIndex;
         bool changedByUser = true, isActiveFile = false;
         float fileSize = 0.0f;
+        public static string loadfilename;
 
         public MainWindow()
         {
@@ -167,6 +168,8 @@ namespace GTESGXEditor
                     isActiveFile = true;
 
                     RefreshSGXDEntries();
+
+                    loadfilename = Path.GetFileNameWithoutExtension(openFile.FileName);
                 }
                 catch (Exception ex)
                 {
@@ -203,6 +206,8 @@ namespace GTESGXEditor
                     isActiveFile = true;
 
                     RefreshSGXDEntries(false, true);
+
+                    loadfilename = Path.GetFileNameWithoutExtension(openFile.FileName);
                 }
                 catch (Exception ex)
                 {
@@ -215,6 +220,7 @@ namespace GTESGXEditor
         {
             SaveFileDialog saveFile = new SaveFileDialog();
             saveFile.Filter = "ESGX File|*.esgx";
+            saveFile.FileName = loadfilename;
             //saveFile.InitialDirectory = Directory.GetCurrentDirectory();
             saveFile.RestoreDirectory = true;
 
