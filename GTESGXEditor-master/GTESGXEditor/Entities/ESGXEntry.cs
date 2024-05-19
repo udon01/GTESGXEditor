@@ -201,7 +201,7 @@ namespace GTESGXEditor.Entities
                         // Read second byte of a line - 6 = loop start, 3 = loop end, determine sample count from where we are in seek
                         if (currentLine[1] == 6)
                         {
-                            entry.waveChunk.loopStartSample = (uint)(stream.Position - 16) / 16 * 28 - 28;
+                            entry.waveChunk.loopStartSample = (uint)(stream.Position - 16) / 16 * 28;
                         }
 
                         if (currentLine[1] == 3)
@@ -237,6 +237,38 @@ namespace GTESGXEditor.Entities
             using (var file = new FileStream(path, FileMode.Create))
             using (var stream = new BinaryStream(file, ByteConverter.Little))
             {
+                int i = 0;
+                int[] zero16bool = new int[sgxdEntries.Count()];
+                foreach (var sgxdEntry in sgxdEntries)
+                {
+                    byte[] zero16 = new byte[16] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+                    byte[] audioStream16 = new byte[16];
+                    Array.Copy(sgxdEntry.audioStream, 0, audioStream16, 0, 16);
+
+                    //同一のインスタンスの時は、同じとする
+                    if (ReferenceEquals(zero16, audioStream16))
+                        zero16bool[i] = 0;
+
+                    //どちらかがNULLか、要素数が異なる時は、同じではない
+                    else if (zero16 == null || audioStream16 == null || zero16.Length != audioStream16.Length)
+                        zero16bool[i] = 1;
+
+                    else
+                    {
+                        for (int j = 0; j < zero16.Length; j++)
+                        {
+                            if (!zero16[j].Equals(audioStream16[j]))
+                            {
+                                //1つでも等しくない要素があれば、同じではない
+                                zero16bool[i] = 1;
+                                break;
+                            }
+                        }
+                    }
+                    i++;
+                }
+                i = 0;
+
                 stream.Position = 0;
                 stream.WriteString("ESGX", StringCoding.Raw);
 
@@ -252,7 +284,15 @@ namespace GTESGXEditor.Entities
 
                 stream.Position += 2;
 
-                int i = 0, cumulativeLength = 0;
+                int[] namelength = new int[sgxdEntries.Count()];
+                foreach (var sgxdEntry in sgxdEntries)
+                {
+                    namelength[i] = sgxdEntry.nameChunk.fileName.Length;
+                    i++;
+                }
+                i = 0;
+
+                int cumulativeLength = 0;
                 foreach (var sampleSetting in sampleSettings)
                 {
                     stream.WriteInt16(sampleSetting.rpmPitch);
@@ -263,6 +303,10 @@ namespace GTESGXEditor.Entities
                     stream.WriteInt32(0x24 + (0x10 * sampleSettings.Count) + (0xA0 * i) + cumulativeLength + 0xC); // ESGX header is 0x24 long, Sample Settings 0x10 long, SGXD header 0xA0 long + each audio stream size, then 12 unknown bytes before first SGXD
 
                     cumulativeLength += sgxdEntries[i].fileSize;
+                    if (zero16bool[i] == 0)
+                        cumulativeLength -= 16;
+                    if (namelength[i] >= 16)
+                        cumulativeLength += 16;
                     i++;
                 }
 
@@ -275,8 +319,11 @@ namespace GTESGXEditor.Entities
                     // All hardcoded variables here are those which don't seem to be used by GT5/6, so seems safe to write the same every time
 
                     stream.WriteString("SGXD", StringCoding.Raw);
-                    stream.WriteUInt32(128);
-                    stream.WriteUInt32(160);
+                    stream.WriteUInt32(0x80);
+                    if (sgxdEntry.nameChunk.fileName.Length >= 16)
+                        stream.WriteUInt32(0xA0);
+                    else
+                        stream.WriteUInt32(0x90);
                     stream.WriteUInt16(sgxdEntry.fileSize);
                     stream.WriteUInt16(32768);
                     stream.WriteString("WAVE", StringCoding.Raw);
@@ -298,7 +345,7 @@ namespace GTESGXEditor.Entities
 
                     stream.WriteUInt16(4096);
                     stream.WriteUInt16(4096);
-                    stream.WriteUInt32(0);
+                    stream.Position += 4;
                     stream.WriteUInt32(sgxdEntry.waveChunk.loopEndSample);
                     stream.WriteUInt32(sgxdEntry.waveChunk.loopStartSample);
                     stream.WriteUInt32(sgxdEntry.waveChunk.loopEndSample);
@@ -313,9 +360,120 @@ namespace GTESGXEditor.Entities
                     stream.WriteBytes(new byte[] { 0x0, 0x0, 0x0, 0x0, 0x02, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x30, 0x80, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x80, 0x0, 0x0, 0x0 });
                     stream.WriteString(sgxdEntry.nameChunk.fileName, StringCoding.Raw);
 
-                    stream.Position += (32 - sgxdEntry.nameChunk.fileName.Length); // Name and unknown byte chunk must fit into 56 bytes for simplicity - names restricted to 32 chars
-                    stream.WriteBytes(sgxdEntry.audioStream);
+                    if (sgxdEntry.nameChunk.fileName.Length >= 16)
+                        stream.Position += (48 - sgxdEntry.nameChunk.fileName.Length); // Name and unknown byte chunk must fit into 56 bytes for simplicity - names restricted to 32 chars
+                    else
+                        stream.Position += (32 - sgxdEntry.nameChunk.fileName.Length);
+
+                    if (zero16bool[i] == 0)
+                    {
+                        byte[] audioStreamnot16 = new byte[sgxdEntry.audioStream.Length - 16];
+                        Array.Copy(sgxdEntry.audioStream, 16, audioStreamnot16, 0, audioStreamnot16.Length);
+                        stream.WriteBytes(audioStreamnot16);
+                    }
+
+                    if (zero16bool[i] == 1)
+                        stream.WriteBytes(sgxdEntry.audioStream);
+
+                    i++;
                 }
+                i = 0;
+            }
+        }
+
+        public void SaveFile_es(string path)
+        {
+            using (var file = new FileStream(path, FileMode.Create))
+            using (var stream = new BinaryStream(file, ByteConverter.Little))
+            {
+                int i = 0;
+                int[] zero16bool = new int[sgxdEntries.Count()];
+                foreach (var sgxdEntry in sgxdEntries)
+                {
+                    byte[] zero16 = new byte[16] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+                    byte[] audioStream16 = new byte[16];
+                    Array.Copy(sgxdEntry.audioStream, 0, audioStream16, 0, 16);
+
+                    //同一のインスタンスの時は、同じとする
+                    if (ReferenceEquals(zero16, audioStream16))
+                        zero16bool[i] = 0;
+
+                    //どちらかがNULLか、要素数が異なる時は、同じではない
+                    else if (zero16 == null || audioStream16 == null || zero16.Length != audioStream16.Length)
+                        zero16bool[i] = 1;
+
+                    else
+                    {
+                        for (int j = 0; j < zero16.Length; j++)
+                        {
+                            if (!zero16[j].Equals(audioStream16[j]))
+                            {
+                                //1つでも等しくない要素があれば、同じではない
+                                zero16bool[i] = 1;
+                                break;
+                            }
+                        }
+                    }
+                    i++;
+                }
+                i = 0;
+
+                stream.Position = 0;
+                stream.WriteString("ENGN", StringCoding.Raw);
+
+                stream.Position += 4;
+
+                stream.WriteUInt32((uint)(0x30 + (0x10 * sampleSettings.Count)));
+
+                stream.Position += 4;
+
+                int filelength = sampleSettings.Count * 16;
+                foreach (var sgxdEntry in sgxdEntries)
+                {
+                    filelength += sgxdEntry.audioStream.Length;
+                    if (zero16bool[i] == 0)
+                        filelength -= 16;
+                }
+                stream.WriteUInt32((uint)filelength);
+
+                stream.WriteUInt32((uint)(0x30 + (0x10 * sampleSettings.Count)));
+                stream.WriteUInt32((uint)sampleSettings.Count);
+                stream.WriteUInt32(0x30);
+
+                stream.Position += 8;
+
+                stream.WriteUInt32(0x7F);
+                stream.WriteUInt32(0x7F);
+
+                int cumulativeLength = 0;
+                foreach (var sampleSetting in sampleSettings)
+                {
+                    stream.WriteInt16(sampleSetting.rpmPitch);
+                    stream.WriteInt16(sampleSetting.rpmStart);
+                    stream.WriteInt16(sampleSetting.rpmEnd);
+                    stream.WriteInt16(sampleSetting.rpmVolume);
+                    stream.WriteInt32(sampleSetting.rpmFrequency);
+                    stream.WriteInt32(cumulativeLength);
+
+                    cumulativeLength += sgxdEntries[i].fileSize;
+                    if (zero16bool[i] == 1)
+                        cumulativeLength += 16;
+                    i++;
+                }
+                i = 0;
+
+                foreach (var sgxdEntry in sgxdEntries)
+                {
+                    if (zero16bool[i] == 0)
+                        stream.WriteBytes(sgxdEntry.audioStream);
+                    else if (zero16bool[i] == 1)
+                    {
+                        stream.Position += 16;
+                        stream.WriteBytes(sgxdEntry.audioStream);
+                    }
+                    i++;
+                }
+                i = 0;
             }
         }
     }

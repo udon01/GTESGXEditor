@@ -33,22 +33,18 @@ namespace GTESGXEditor.Entities
             Array.Resize(ref audioStream16, 16);
             Array.Copy(audioStream, 0, audioStream16, 0, 16);
             bool isEqual = true;
+            //同一のインスタンスの時は、同じとする
             if (ReferenceEquals(zero16, audioStream16))
-            {
-                //同一のインスタンスの時は、同じとする
                 isEqual = true;
-            }
+
+            //どちらかがNULLか、要素数が異なる時は、同じではない
             else if (zero16 == null || audioStream16 == null || zero16.Length != audioStream16.Length)
-            {
-                //どちらかがNULLか、要素数が異なる時は、同じではない
                 isEqual = false;
-            }
+
             else
             {
-                //1つ1つの要素が等しいかを調べる
                 for (int i = 0; i < zero16.Length; i++)
                 {
-                    //ary1の要素のEqualsメソッドで、ary2の要素と等しいか調べる
                     if (!zero16[i].Equals(audioStream16[i]))
                     {
                         //1つでも等しくない要素があれば、同じではない

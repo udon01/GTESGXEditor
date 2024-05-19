@@ -6,13 +6,12 @@
         xmlns:local="clr-namespace:GTESGXEditor_JP"
         mc:Ignorable="d"
         ResizeMode="NoResize"
-        Title="Gran Turismo ESGX Editor_JP ver1.23" Height="450" Width="526" MinWidth="526" MinHeight="450">
+        Title="Gran Turismo ES / ESGX Editor_JP ver1.3" Height="450" Width="526" MinWidth="526" MinHeight="450">
     <Grid Margin="0,0,432,0">
         <Menu HorizontalAlignment="Left" Height="21" VerticalAlignment="Top" Width="518" Margin="0,0,-432,0">
             <MenuItem Header="_ファイル">
                 <MenuItem Header="_初期化" Click="New_Click" />
-                <MenuItem Header="_開く(ESファイル)" Click="OpenES_Click" />
-                <MenuItem Header="_開く(ESGXファイル)" Click="Open_Click" />
+                <MenuItem Header="_開く" Click="Open_Click" />
                 <MenuItem x:Name="mnuSave" Header="_保存する" Click="Save_Click" IsEnabled="False" />
             </MenuItem>
         </Menu>

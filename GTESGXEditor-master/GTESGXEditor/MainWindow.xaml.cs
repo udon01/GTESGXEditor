@@ -151,7 +151,6 @@ namespace GTESGXEditor
         private void Open_Click(object sender, RoutedEventArgs e)
         {
             OpenFileDialog openFile = new OpenFileDialog();
-            openFile.Filter = "ESGX File|*.esgx";
             //openFile.InitialDirectory = Directory.GetCurrentDirectory();
             openFile.CheckFileExists = true;
             openFile.CheckPathExists = true;
@@ -159,59 +158,53 @@ namespace GTESGXEditor
 
             if (openFile.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                try
+                if (Path.GetExtension(openFile.ToString()).ToLower() == ".esgx")
                 {
-                    esgx = new ESGXEntry();
-
-                    esgx.ReadFile(openFile.FileName);
-
-                    isActiveFile = true;
-
-                    RefreshSGXDEntries();
-
-                    loadfilename = Path.GetFileNameWithoutExtension(openFile.FileName);
-                }
-                catch (Exception ex)
-                {
-                    System.Windows.Forms.MessageBox.Show(ex.Message, "Error");
-                }
-            }
-        }
-
-        private void OpenES_Click(object sender, RoutedEventArgs e)
-        {
-            OpenFileDialog openFile = new OpenFileDialog();
-            //openFile.InitialDirectory = Directory.GetCurrentDirectory();
-            openFile.CheckFileExists = true;
-            openFile.CheckPathExists = true;
-            openFile.RestoreDirectory = true;
-
-            if (openFile.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                try
-                {
-                    esgx = new ESGXEntry();
-                    esgx.ReadESFile(openFile.FileName);
-                    
-                    lblEstimate.Content = string.Format("Estimated File Size: {0}KB", Math.Round(double.Parse(new FileInfo(openFile.FileName).Length.ToString()) / 1000, 1).ToString());
-                    if (Math.Round(fileSize / 1000, 1) >= 200)
+                    try
                     {
-                        lblEstimate.Foreground = Brushes.Red;
+                        esgx = new ESGXEntry();
+
+                        esgx.ReadFile(openFile.FileName);
+
+                        isActiveFile = true;
+
+                        RefreshSGXDEntries();
+
+                        loadfilename = Path.GetFileNameWithoutExtension(openFile.FileName);
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        lblEstimate.Foreground = Brushes.Black;
+                        System.Windows.Forms.MessageBox.Show(ex.Message, "Error");
                     }
-
-                    isActiveFile = true;
-
-                    RefreshSGXDEntries(false, true);
-
-                    loadfilename = Path.GetFileNameWithoutExtension(openFile.FileName);
                 }
-                catch (Exception ex)
+
+                else
                 {
-                    System.Windows.Forms.MessageBox.Show(ex.Message, "Error");
+                    try
+                    {
+                        esgx = new ESGXEntry();
+                        esgx.ReadESFile(openFile.FileName);
+
+                        lblEstimate.Content = string.Format("Estimated File Size: {0}KB", Math.Round(double.Parse(new FileInfo(openFile.FileName).Length.ToString()) / 1000, 1).ToString());
+                        if (Math.Round(fileSize / 1000, 1) >= 200)
+                        {
+                            lblEstimate.Foreground = Brushes.Red;
+                        }
+                        else
+                        {
+                            lblEstimate.Foreground = Brushes.Black;
+                        }
+
+                        isActiveFile = true;
+
+                        RefreshSGXDEntries(false, true);
+
+                        loadfilename = Path.GetFileNameWithoutExtension(openFile.FileName);
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Windows.Forms.MessageBox.Show(ex.Message, "Error");
+                    }
                 }
             }
         }
@@ -219,16 +212,26 @@ namespace GTESGXEditor
         private void Save_Click(object sender, RoutedEventArgs e)
         {
             SaveFileDialog saveFile = new SaveFileDialog();
-            saveFile.Filter = "ESGX File|*.esgx";
+            saveFile.Filter = "ESGX File, ES File|*.*";
             saveFile.FileName = loadfilename;
             //saveFile.InitialDirectory = Directory.GetCurrentDirectory();
             saveFile.RestoreDirectory = true;
 
             if (saveFile.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                if (esgx.Validate())
+                if (Path.GetExtension(saveFile.ToString()).ToLower() == ".esgx")
                 {
-                    esgx.SaveFile(saveFile.FileName);
+                    if (esgx.Validate())
+                    {
+                        esgx.SaveFile(saveFile.FileName);
+                    }
+                }
+                else
+                {
+                    if (esgx.Validate())
+                    {
+                        esgx.SaveFile_es(saveFile.FileName);
+                    }
                 }
             }
         }
