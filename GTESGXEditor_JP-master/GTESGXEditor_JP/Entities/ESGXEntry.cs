@@ -190,7 +190,6 @@ namespace GTESGXEditor_JP.Entities
                     numSamples = (entry.audioStream.Length / 16) * 28;
 
                     //stream.Position = 16;
-
                     while (stream.Position <= entry.audioStream.Length)
                     {
 
@@ -199,7 +198,7 @@ namespace GTESGXEditor_JP.Entities
                         // Read second byte of a line - 6 = loop start, 3 = loop end, determine sample count from where we are in seek
                         if (currentLine[1] == 6)
                         {
-                            entry.waveChunk.loopStartSample = (uint)(stream.Position - 16) / 16 * 28;
+                            entry.waveChunk.loopStartSample = (uint)(stream.Position - 16) / 16 * 28 - 28;
                         }
 
                         if (currentLine[1] == 3)
@@ -318,11 +317,12 @@ namespace GTESGXEditor_JP.Entities
 
                     stream.WriteString("SGXD", StringCoding.Raw);
                     stream.WriteUInt32(0x80);
-                    if (sgxdEntry.nameChunk.fileName.Length >= 16)
-                        stream.WriteUInt32(0xA0);
-                    else
-                        stream.WriteUInt32(0x90);
-                    stream.WriteUInt16(sgxdEntry.fileSize);
+                    int namelength_write = 160 + ((sgxdEntry.nameChunk.fileName.Length - 1) / 16 * 16);
+                    stream.WriteUInt32((uint)namelength_write);
+                    int filesize = sgxdEntry.fileSize;
+                    if (zero16bool[i] == 0)
+                        filesize -= 16;
+                    stream.WriteUInt16((ushort)filesize);
                     stream.WriteUInt16(32768);
                     stream.WriteString("WAVE", StringCoding.Raw);
                     stream.WriteUInt32(72);
@@ -347,7 +347,7 @@ namespace GTESGXEditor_JP.Entities
                     stream.WriteUInt32(sgxdEntry.waveChunk.loopEndSample);
                     stream.WriteUInt32(sgxdEntry.waveChunk.loopStartSample);
                     stream.WriteUInt32(sgxdEntry.waveChunk.loopEndSample);
-                    stream.WriteUInt32((uint)sgxdEntry.audioStream.Length);
+                    stream.WriteUInt32((uint)filesize);
 
                     stream.Position += 16;
 
@@ -358,10 +358,8 @@ namespace GTESGXEditor_JP.Entities
                     stream.WriteBytes(new byte[] { 0x0, 0x0, 0x0, 0x0, 0x02, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x30, 0x80, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x80, 0x0, 0x0, 0x0 });
                     stream.WriteString(sgxdEntry.nameChunk.fileName, StringCoding.Raw);
 
-                    if (sgxdEntry.nameChunk.fileName.Length >= 16)
-                        stream.Position += (48 - sgxdEntry.nameChunk.fileName.Length); // Name and unknown byte chunk must fit into 56 bytes for simplicity - names restricted to 32 chars
-                    else
-                        stream.Position += (32 - sgxdEntry.nameChunk.fileName.Length);
+                    int namelength_write_2 = 32 + (sgxdEntry.nameChunk.fileName.Length - 1) / 16 * 16;
+                    stream.Position += (namelength_write_2 - sgxdEntry.nameChunk.fileName.Length);
 
                     if (zero16bool[i] == 0)
                     {
