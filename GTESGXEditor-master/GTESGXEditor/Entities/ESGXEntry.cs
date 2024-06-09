@@ -63,8 +63,9 @@ namespace GTESGXEditor.Entities
 
                     entry.namePointer = stream.ReadUInt32();
                     entry.dataOffset = stream.ReadUInt32();
-                    entry.fileSize = stream.ReadUInt16();
-                    entry.unknown = stream.ReadUInt16();
+                    entry.fileSize = stream.ReadUInt32();
+                    entry.fileSize -= 2147483648;
+                    //entry.unknown = stream.ReadUInt16();
 
                     stream.Position += 4;
 
@@ -94,7 +95,7 @@ namespace GTESGXEditor.Entities
 
                     stream.Position = sampleSettings[i].SGXDOffset + entry.dataOffset;
 
-                    entry.audioStream = stream.ReadBytes(entry.fileSize);
+                    entry.audioStream = stream.ReadBytes((int)entry.fileSize);
                     
                     sgxdEntries.Add(entry);
                 }
@@ -292,7 +293,7 @@ namespace GTESGXEditor.Entities
                 }
                 i = 0;
 
-                int cumulativeLength = 0;
+                uint cumulativeLength = 0;
                 foreach (var sampleSetting in sampleSettings)
                 {
                     stream.WriteInt16(sampleSetting.rpmPitch);
@@ -300,7 +301,7 @@ namespace GTESGXEditor.Entities
                     stream.WriteInt16(sampleSetting.rpmEnd);
                     stream.WriteInt16(sampleSetting.rpmVolume);
                     stream.WriteInt32(sampleSetting.rpmFrequency);
-                    stream.WriteInt32(0x24 + (0x10 * sampleSettings.Count) + (0xA0 * i) + cumulativeLength + 0xC); // ESGX header is 0x24 long, Sample Settings 0x10 long, SGXD header 0xA0 long + each audio stream size, then 12 unknown bytes before first SGXD
+                    stream.WriteInt32((int)(0x24 + (0x10 * sampleSettings.Count) + (0xA0 * i) + cumulativeLength + 0xC)); // ESGX header is 0x24 long, Sample Settings 0x10 long, SGXD header 0xA0 long + each audio stream size, then 12 unknown bytes before first SGXD
 
                     cumulativeLength += sgxdEntries[i].fileSize;
                     if (zero16bool[i] == 0)
@@ -322,11 +323,12 @@ namespace GTESGXEditor.Entities
                     stream.WriteUInt32(0x80);
                     int namelength_write = 160 + ((sgxdEntry.nameChunk.fileName.Length - 1) / 16 * 16);
                     stream.WriteUInt32((uint)namelength_write);
-                    int filesize = sgxdEntry.fileSize;
+                    uint filesize = sgxdEntry.fileSize;
                     if (zero16bool[i] == 0)
                         filesize -= 16;
-                    stream.WriteUInt16((ushort)filesize);
-                    stream.WriteUInt16(32768);
+                    stream.WriteUInt32(filesize);
+                    stream.Position -= 1;
+                    stream.WriteByte(0x80);
                     stream.WriteString("WAVE", StringCoding.Raw);
                     stream.WriteUInt32(72);
 
@@ -350,7 +352,7 @@ namespace GTESGXEditor.Entities
                     stream.WriteUInt32(sgxdEntry.waveChunk.loopEndSample);
                     stream.WriteUInt32(sgxdEntry.waveChunk.loopStartSample);
                     stream.WriteUInt32(sgxdEntry.waveChunk.loopEndSample);
-                    stream.WriteUInt32((uint)filesize);
+                    stream.WriteUInt32(filesize);
 
                     stream.Position += 16;
 
@@ -362,7 +364,7 @@ namespace GTESGXEditor.Entities
                     stream.WriteString(sgxdEntry.nameChunk.fileName, StringCoding.Raw);
 
                     int namelength_write_2 = 32 + (sgxdEntry.nameChunk.fileName.Length - 1) / 16 * 16;
-                    stream.Position += (namelength_write_2 - sgxdEntry.nameChunk.fileName.Length);
+                    stream.Position += namelength_write_2 - sgxdEntry.nameChunk.fileName.Length;
 
                     if (zero16bool[i] == 0)
                     {
@@ -444,7 +446,7 @@ namespace GTESGXEditor.Entities
                 stream.WriteUInt32(0x7F);
                 stream.WriteUInt32(0x7F);
 
-                int cumulativeLength = 0;
+                uint cumulativeLength = 0;
                 foreach (var sampleSetting in sampleSettings)
                 {
                     stream.WriteInt16(sampleSetting.rpmPitch);
@@ -452,7 +454,7 @@ namespace GTESGXEditor.Entities
                     stream.WriteInt16(sampleSetting.rpmEnd);
                     stream.WriteInt16(sampleSetting.rpmVolume);
                     stream.WriteInt32(sampleSetting.rpmFrequency);
-                    stream.WriteInt32(cumulativeLength);
+                    stream.WriteInt32((int)cumulativeLength);
 
                     cumulativeLength += sgxdEntries[i].fileSize;
                     if (zero16bool[i] == 1)

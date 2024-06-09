@@ -13,7 +13,7 @@ namespace GTESGXEditor_JP.Entities
     public class SGXDEntry
     {
         public uint namePointer, dataOffset;
-        public ushort fileSize, unknown;
+        public uint fileSize, unknown;
         public NameChunk nameChunk;
         public WaveChunk waveChunk;
         public byte[] audioStream;

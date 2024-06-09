@@ -301,7 +301,7 @@ namespace GTESGXEditor
                 {
                     selectedSgxd.audioStream = ReadVAG(openFile.FileName);
                     selectedSgxd.waveChunk.soundSampleRate = ReadVAGSampleRate(openFile.FileName);
-                    selectedSgxd.fileSize = (ushort)selectedSgxd.audioStream.Length;
+                    selectedSgxd.fileSize = (uint)selectedSgxd.audioStream.Length;
                     selectedSgxd.audioStreamName = Path.GetFileName(openFile.FileName);
                     txtFileSize.Text = selectedSgxd.fileSize.ToString();
                     txtSampleRate.Text = selectedSgxd.waveChunk.soundSampleRate.ToString();
